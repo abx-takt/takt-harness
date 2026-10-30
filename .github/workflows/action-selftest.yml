@@ -1,0 +1,23 @@
+name: action self-test
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+  workflow_dispatch:
+jobs:
+  measure:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Measure two shell commands with the action (wall time only on hosted runners)
+        id: m
+        uses: ./
+        with:
+          baseline: 'python3 -c "print(sum(range(3000000)))"'
+          command: 'python3 -c "print(sum(range(3000000)))"'
+          reps: '5'
+          out: 'selftest-readings.json'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: selftest-readings
+          path: ${{ steps.m.outputs.readings }}

@@ -10,6 +10,7 @@ It is a measurement tool only. It does not change, analyse or optimise your prog
 - [What it measures and why](#what-it-measures-and-why)
 - [Install](#install)
 - [Usage](#usage)
+- [Use it as a GitHub Action](#use-it-as-a-github-action)
 - [Inside VMs, containers and CI](#inside-vms-containers-and-ci)
 - [The readings bundle](#the-readings-bundle)
 - [Privacy: what leaves your machine](#privacy-what-leaves-your-machine)
@@ -247,6 +248,30 @@ Send the bundle unedited, as the tool wrote it. The verdict decides nothing by i
 the record against its own run of the same builds, and `--reference` compares the trial build's
 instruction count with that run (the same binary on the same input executes nearly the same
 number of instructions; the tolerance is 1%). Exit status 0 whenever a verdict is printed.
+
+## Use it as a GitHub Action
+
+Measure a program in your own CI, before and after a change, and keep the readings as an artifact.
+GitHub-hosted runners usually expose no hardware counters, so the action measures wall time by
+default (`counters: 'true'` switches the counters on for self-hosted runners that have them).
+
+```yaml
+- uses: rdmitry0911/takt-harness@master
+  id: measure
+  with:
+    baseline: './bin/my-program-before --input data/sample.csv'
+    command:  './bin/my-program-after  --input data/sample.csv'
+    reps: '9'
+    out: 'readings.json'
+    fail-on-regression: 'false'   # 'true' fails the step when outputs differ or the new build is slower
+- uses: actions/upload-artifact@v4
+  with:
+    name: readings
+    path: ${{ steps.measure.outputs.readings }}
+```
+
+Without `baseline` the action measures one command. The bundle contains hashes and machine facts,
+never your code or data; review it with `takt-harness show` before sharing it.
 
 ## Inside VMs, containers and CI
 

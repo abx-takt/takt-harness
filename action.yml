@@ -1,0 +1,80 @@
+name: 'takt-harness measure'
+description: 'Measure a command (and optionally a baseline) with takt-harness: wall time, CPU counters where available, output hash. Writes a readings bundle.'
+author: 'TAKT'
+branding:
+  icon: 'activity'
+  color: 'blue'
+inputs:
+  command:
+    description: 'The command to measure, with arguments (shell words).'
+    required: true
+  baseline:
+    description: 'Optional baseline command measured in interleaved rounds; the run also compares outputs and timings against it.'
+    required: false
+    default: ''
+  reps:
+    description: 'Measured runs per command.'
+    required: false
+    default: '9'
+  warmup:
+    description: 'Unmeasured warm-up runs per command.'
+    required: false
+    default: '1'
+  counters:
+    description: 'Use hardware counters (true) or wall time only (false). GitHub-hosted runners usually have no counters.'
+    required: false
+    default: 'false'
+  out:
+    description: 'Path of the readings bundle.'
+    required: false
+    default: 'readings.json'
+  version:
+    description: 'takt-harness release tag to download.'
+    required: false
+    default: 'v0.2.1'
+  fail-on-regression:
+    description: 'With a baseline: fail the step when outputs differ or the compare step reports a slowdown.'
+    required: false
+    default: 'false'
+outputs:
+  readings:
+    description: 'Path of the readings bundle.'
+    value: ${{ steps.run.outputs.readings }}
+runs:
+  using: 'composite'
+  steps:
+    - name: Download takt-harness
+      shell: bash
+      run: |
+        set -euo pipefail
+        dir="$RUNNER_TEMP/takt-harness"; mkdir -p "$dir"; cd "$dir"
+        base="https://github.com/rdmitry0911/takt-harness/releases/download/${{ inputs.version }}"
+        curl -sSLO "$base/takt-harness-x86_64-linux"
+        curl -sSLO "$base/SHA256SUMS"
+        sha256sum -c SHA256SUMS
+        chmod +x takt-harness-x86_64-linux
+        echo "$dir" >> "$GITHUB_PATH"
+    - name: Measure
+      id: run
+      shell: bash
+      run: |
+        set -euo pipefail
+        flags="--reps ${{ inputs.reps }} --warmup ${{ inputs.warmup }} --out ${{ inputs.out }}"
+        if [ "${{ inputs.counters }}" != "true" ]; then flags="$flags --no-counters"; fi
+        if [ -n "${{ inputs.baseline }}" ]; then
+          takt-harness-x86_64-linux run $flags --label baseline --label new -- ${{ inputs.baseline }} ::: ${{ inputs.command }}
+        else
+          takt-harness-x86_64-linux run $flags -- ${{ inputs.command }}
+        fi
+        echo "readings=${{ inputs.out }}" >> "$GITHUB_OUTPUT"
+        takt-harness-x86_64-linux show "${{ inputs.out }}" | head -n 60
+    - name: Compare with the baseline
+      if: ${{ inputs.baseline != '' }}
+      shell: bash
+      run: |
+        set -euo pipefail
+        if [ "${{ inputs['fail-on-regression'] }}" = "true" ]; then
+          takt-harness-x86_64-linux compare "${{ inputs.out }}"
+        else
+          takt-harness-x86_64-linux compare "${{ inputs.out }}" || true
+        fi
