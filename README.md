@@ -62,18 +62,18 @@ every command once, in the listed order on even rounds and in reverse on odd rou
 ## Install
 
 A ready static binary for any x86-64 Linux is attached to each
-[release](https://github.com/rdmitry0911/takt-harness/releases):
+[release](https://github.com/abx-takt/takt-harness/releases):
 
 ```sh
-curl -LO https://github.com/rdmitry0911/takt-harness/releases/latest/download/takt-harness-x86_64-linux
-curl -LO https://github.com/rdmitry0911/takt-harness/releases/latest/download/SHA256SUMS
+curl -LO https://github.com/abx-takt/takt-harness/releases/latest/download/takt-harness-x86_64-linux
+curl -LO https://github.com/abx-takt/takt-harness/releases/latest/download/SHA256SUMS
 sha256sum -c SHA256SUMS && chmod +x takt-harness-x86_64-linux
 ```
 
 Or build it from source, with Rust 1.74 or newer:
 
 ```sh
-git clone https://github.com/rdmitry0911/takt-harness && cd takt-harness
+git clone https://github.com/abx-takt/takt-harness && cd takt-harness
 cargo build --release
 # the binary: target/release/takt-harness
 
@@ -256,7 +256,7 @@ GitHub-hosted runners usually expose no hardware counters, so the action measure
 default (`counters: 'true'` switches the counters on for self-hosted runners that have them).
 
 ```yaml
-- uses: rdmitry0911/takt-harness@master
+- uses: abx-takt/takt-harness@master
   id: measure
   with:
     baseline: './bin/my-program-before --input data/sample.csv'

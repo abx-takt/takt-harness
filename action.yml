@@ -48,7 +48,7 @@ runs:
       run: |
         set -euo pipefail
         dir="$RUNNER_TEMP/takt-harness"; mkdir -p "$dir"; cd "$dir"
-        base="https://github.com/rdmitry0911/takt-harness/releases/download/${{ inputs.version }}"
+        base="https://github.com/abx-takt/takt-harness/releases/download/${{ inputs.version }}"
         curl -sSLO "$base/takt-harness-x86_64-linux"
         curl -sSLO "$base/SHA256SUMS"
         sha256sum -c SHA256SUMS
