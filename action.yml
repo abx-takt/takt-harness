@@ -57,24 +57,35 @@ runs:
     - name: Measure
       id: run
       shell: bash
+      env:
+        TH_COMMAND: ${{ inputs.command }}
+        TH_BASELINE: ${{ inputs.baseline }}
+        TH_REPS: ${{ inputs.reps }}
+        TH_WARMUP: ${{ inputs.warmup }}
+        TH_COUNTERS: ${{ inputs.counters }}
+        TH_OUT: ${{ inputs.out }}
       run: |
         set -euo pipefail
-        flags="--reps ${{ inputs.reps }} --warmup ${{ inputs.warmup }} --out ${{ inputs.out }}"
-        if [ "${{ inputs.counters }}" != "true" ]; then flags="$flags --no-counters"; fi
-        if [ -n "${{ inputs.baseline }}" ]; then
-          takt-harness-x86_64-linux run $flags --label baseline --label new -- ${{ inputs.baseline }} ::: ${{ inputs.command }}
+        flags="--reps $TH_REPS --warmup $TH_WARMUP --out $TH_OUT"
+        if [ "$TH_COUNTERS" != "true" ]; then flags="$flags --no-counters"; fi
+        # inputs are shell words (quotes allowed); eval re-parses them exactly as a shell line would
+        if [ -n "$TH_BASELINE" ]; then
+          eval "takt-harness-x86_64-linux run $flags --label baseline --label new -- $TH_BASELINE ::: $TH_COMMAND"
         else
-          takt-harness-x86_64-linux run $flags -- ${{ inputs.command }}
+          eval "takt-harness-x86_64-linux run $flags -- $TH_COMMAND"
         fi
-        echo "readings=${{ inputs.out }}" >> "$GITHUB_OUTPUT"
-        takt-harness-x86_64-linux show "${{ inputs.out }}" | head -n 60
+        echo "readings=$TH_OUT" >> "$GITHUB_OUTPUT"
+        takt-harness-x86_64-linux show "$TH_OUT" | head -n 60
     - name: Compare with the baseline
       if: ${{ inputs.baseline != '' }}
       shell: bash
+      env:
+        TH_OUT: ${{ inputs.out }}
+        TH_FAIL: ${{ inputs.fail-on-regression }}
       run: |
         set -euo pipefail
-        if [ "${{ inputs['fail-on-regression'] }}" = "true" ]; then
-          takt-harness-x86_64-linux compare "${{ inputs.out }}"
+        if [ "$TH_FAIL" = "true" ]; then
+          takt-harness-x86_64-linux compare "$TH_OUT"
         else
-          takt-harness-x86_64-linux compare "${{ inputs.out }}" || true
+          takt-harness-x86_64-linux compare "$TH_OUT" || true
         fi
